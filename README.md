@@ -27,13 +27,13 @@ Interactive WireGuard → Xray/VLESS gateway manager. **Version 3.2.2**.
 
 ### دانلود و اجرا
 
-روی سرور اجرا کنید. اگر curl نصب نیست، ابتدا `sudo apt-get update && sudo apt-get install -y curl` را اجرا کنید.
+روی سرور اجرا کنید. اگر wget نصب نیست، ابتدا `sudo apt-get update && sudo apt-get install -y wget` را اجرا کنید.
 
 ```bash
-curl -fL --retry 3 https://raw.githubusercontent.com/Mehdi682007/pd-xray-wg-manager/main/pd-xray-wg-manager.sh -o pd-xray-wg-manager.sh && sudo bash pd-xray-wg-manager.sh
+bash -c 'wget -O pd-xray-wg-manager.sh https://raw.githubusercontent.com/Mehdi682007/pd-xray-wg-manager/main/pd-xray-wg-manager.sh && sudo bash pd-xray-wg-manager.sh'
 ```
 
-یا با wget:
+دانلود و اجرای جداگانه:
 
 ```bash
 wget -O pd-xray-wg-manager.sh https://raw.githubusercontent.com/Mehdi682007/pd-xray-wg-manager/main/pd-xray-wg-manager.sh
@@ -96,10 +96,10 @@ Run a WireGuard server whose clients' IPv4 TCP traffic exits through an Xray VLE
 Target: **Ubuntu 24.04**, root, apt and systemd. Debian/other Ubuntu releases pass the family check but are not all clean-install tested. The kernel/container must support WireGuard, nftables and network namespaces. A working VLESS URL, package/GitHub access and an open WireGuard UDP port (default `51820`) are required. This version uses `wg0` and `10.66.66.0/24`.
 
 ```bash
-curl -fL --retry 3 https://raw.githubusercontent.com/Mehdi682007/pd-xray-wg-manager/main/pd-xray-wg-manager.sh -o pd-xray-wg-manager.sh && sudo bash pd-xray-wg-manager.sh
+bash -c 'wget -O pd-xray-wg-manager.sh https://raw.githubusercontent.com/Mehdi682007/pd-xray-wg-manager/main/pd-xray-wg-manager.sh && sudo bash pd-xray-wg-manager.sh'
 ```
 
-Download to a real file: rollback requires a persistent script path, so do not use process substitution (`bash <(curl ...)`). Install curl with apt first if needed. The wget commands above are an alternative.
+Download to a real file: rollback requires a persistent script path, so do not use process substitution (`bash <(curl ...)`). Install wget with apt first if needed. The separate download/run commands above are an alternative. The installation command starts with Bash and downloads using wget; the manager may still install/use curl internally for connectivity tests.
 
 ### Setup and clients
 
