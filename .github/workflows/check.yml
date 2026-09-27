@@ -1,0 +1,13 @@
+name: Check installer
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bash syntax
+        run: bash -n pd-xray-wg-manager.sh
+      - name: Embedded Python and regressions
+        run: python3 tests/test_installer.py
