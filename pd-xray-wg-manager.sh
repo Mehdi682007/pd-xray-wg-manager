@@ -1028,7 +1028,7 @@ show_banner() {
                                        |___/
 BANNER
  if [[ -t 1 ]]; then printf '\033[1;96m'; fi
- printf '┌────────────────────────┐\n│  PD - Xray WG Manager   │\n└────────────────────────┘\n'
+ printf '┌────────────────────────┐\n│  PD - Xray WG Manager   │\n└───────────────────────┘\n'
  if [[ -t 1 ]]; then printf '\033[0m'; fi
 }
 menu() {
