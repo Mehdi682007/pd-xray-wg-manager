@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.2.8
+
+- Prime the temporary WireGuard tunnel before client-path DNS checks and query the DNS address used in actual client profiles.
+
 ## 3.2.7
 
 - Include the DNS response in end-to-end diagnostics when the temporary WireGuard client DNS probe fails.

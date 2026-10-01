@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
-VERSION=3.2.7
+VERSION=3.2.8
 S=/etc/xray-gateway-manager
 C=$S/clients
 B=/var/backups/xray-gateway-manager
@@ -989,8 +989,10 @@ PY
   ip netns exec "$ns" wg set wgt private-key "$d/key" peer "$(wg show wg0 public-key)" endpoint "$host_addr:$(wg show wg0 listen-port)" allowed-ips 0.0.0.0/0 persistent-keepalive 25
   ip -n "$ns" addr add "$test_addr/32" dev wgt; ip -n "$ns" link set wgt mtu 1380 up
   ip -n "$ns" route add default dev wgt
+  # Prime the tunnel, then test the same DNS server placed in real client configs.
+  for attempt in 1 2 3; do ip netns exec "$ns" ping -c 1 -W 1 10.66.66.1 >/dev/null 2>&1 && break || true; done
   for mode in '' +tcp; do
-   result=$(ip netns exec "$ns" dig @1.1.1.1 api.ipify.org $mode +time=8 +tries=1 2>&1) || true
+   result=$(ip netns exec "$ns" dig @10.66.66.1 api.ipify.org $mode +time=8 +tries=1 2>&1) || true
    if ! grep -q 'status: NOERROR' <<< "$result" || ! grep -Eq 'ANSWER: [1-9]' <<< "$result"; then
     log "E2E DNS $mode failed: $result" >&2
     return 1
