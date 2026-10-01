@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
-VERSION=3.2.2
+VERSION=3.2.3
 S=/etc/xray-gateway-manager
 C=$S/clients
 B=/var/backups/xray-gateway-manager
@@ -917,25 +917,61 @@ health() {
 }
 e2e() (
  set -Eeuo pipefail
- local ns=xgw-e2e d pub='' ip4 addr
+ local ns suffix host_link peer_link d pub='' ip4 addr test_addr net_pair host_addr client_addr
+ suffix=$(od -An -N3 -tx1 /dev/urandom | tr -d ' \n')
+ ns="xgwt${suffix}"
+ host_link="xg${suffix}h"
+ peer_link="xg${suffix}n"
  d=$(mktemp -d)
- cleanup_test() { [[ -z $pub ]] || wg set wg0 peer "$pub" remove; ip netns del "$ns" 2>/dev/null || true; ip link del xgw-e2e-h 2>/dev/null || true; rm -rf "$d"; }
- # Refuse collisions before touching test interfaces or client addresses.
- ip netns list | grep -q '^xgw-e2e\b' && die 'Test namespace already exists.'
- if ip link show xgw-e2e-h >/dev/null 2>&1; then die 'Test link already exists.'; fi
- wg show wg0 allowed-ips | grep -q '10.66.66.254/' && die 'Test IP .254 is occupied.'
+ cleanup_test() {
+  [[ -z $pub ]] || wg set wg0 peer "$pub" remove || true
+  ip -n "$ns" link del wgt 2>/dev/null || true
+  ip netns del "$ns" 2>/dev/null || true
+  ip link del "$host_link" 2>/dev/null || true
+  rm -rf "$d"
+ }
+ # Pick an unused RFC 5737 /30. Some VPS providers reserve or route
+ # 192.0.2.0/30 for their own test namespaces; fixed test addresses collide.
+ read -r net_pair host_addr client_addr < <(python3 - <<'PY'
+import ipaddress,json,subprocess
+routes=json.loads(subprocess.check_output(['ip','-4','-j','route','show','table','all'],text=True))
+used=[]
+for r in routes:
+ dst=r.get('dst')
+ if dst and dst!='default':
+  try: used.append(ipaddress.ip_network(dst,strict=False))
+  except ValueError: pass
+for base in ('192.0.2.0/24','198.51.100.0/24','203.0.113.0/24'):
+ for net in ipaddress.ip_network(base).subnets(new_prefix=30):
+  if any(net.overlaps(route) for route in used): continue
+  hosts=list(net.hosts())
+  print(net,hosts[0],hosts[1]); raise SystemExit(0)
+raise SystemExit('No unused RFC 5737 /30 is available for the temporary test.')
+PY
+ )
+ test_addr=$(python3 - <<'PY'
+import ipaddress,re,subprocess
+cfg=open('/etc/wireguard/wg0.conf').read()+'\n'+subprocess.check_output(['wg','show','wg0','allowed-ips'],text=True)
+used=[ipaddress.ip_network(x,strict=False) for x in re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}/\d{1,2}',cfg)]
+network=ipaddress.ip_network('10.66.66.0/24')
+for ip in network.hosts():
+ if ip==ipaddress.ip_address('10.66.66.1'): continue
+ if not any(ip in n for n in used): print(ip); break
+else: raise SystemExit('No unused address for a temporary WireGuard test peer.')
+PY
+ )
  trap cleanup_test EXIT
  ip netns add "$ns"
- ip link add xgw-e2e-h type veth peer name xgw-e2e-n
- ip link set xgw-e2e-n netns "$ns"
- ip addr add 192.0.2.1/30 dev xgw-e2e-h; ip link set xgw-e2e-h up
- ip -n "$ns" addr add 192.0.2.2/30 dev xgw-e2e-n
- ip -n "$ns" link set xgw-e2e-n up; ip -n "$ns" link set lo up
+ ip link add "$host_link" type veth peer name "$peer_link"
+ ip link set "$peer_link" netns "$ns"
+ ip addr add "$host_addr/30" dev "$host_link"; ip link set "$host_link" up
+ ip -n "$ns" addr add "$client_addr/30" dev "$peer_link"
+ ip -n "$ns" link set "$peer_link" up; ip -n "$ns" link set lo up
  wg genkey > "$d/key"; pub=$(wg pubkey < "$d/key")
- wg set wg0 peer "$pub" allowed-ips 10.66.66.254/32
+ wg set wg0 peer "$pub" allowed-ips "$test_addr/32"
  ip -n "$ns" link add wgt type wireguard
- ip netns exec "$ns" wg set wgt private-key "$d/key" peer "$(wg show wg0 public-key)" endpoint "192.0.2.1:$(wg show wg0 listen-port)" allowed-ips 0.0.0.0/0 persistent-keepalive 25
- ip -n "$ns" addr add 10.66.66.254/32 dev wgt; ip -n "$ns" link set wgt mtu 1380 up
+ ip netns exec "$ns" wg set wgt private-key "$d/key" peer "$(wg show wg0 public-key)" endpoint "$host_addr:$(wg show wg0 listen-port)" allowed-ips 0.0.0.0/0 persistent-keepalive 25
+ ip -n "$ns" addr add "$test_addr/32" dev wgt; ip -n "$ns" link set wgt mtu 1380 up
  ip -n "$ns" route add default dev wgt
  for mode in '' +tcp; do
   result=$(ip netns exec "$ns" dig @1.1.1.1 api.ipify.org $mode +time=8 +tries=1)

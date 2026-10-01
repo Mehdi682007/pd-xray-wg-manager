@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.2.3
+
+- Fix E2E test failure on hosts already using the former fixed `192.0.2.0/30` test subnet.
+- Allocate an unused RFC 5737 `/30`, unique interface and namespace names, and a free WireGuard test peer address; always clean up only the test resources.
+
 ## 3.2.2
 
 - First GitHub publication of PD - Xray WG Manager.

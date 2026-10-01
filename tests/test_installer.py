@@ -48,6 +48,13 @@ quick
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotIn('UNEXPECTED', result.stdout)
 
+    def test_e2e_avoids_fixed_test_network(self):
+        self.assertNotIn("ns=xgw-e2e", SOURCE)
+        self.assertNotIn('192.0.2.1/30', SOURCE)
+        self.assertIn("route','show','table','all", SOURCE)
+        self.assertIn('No unused RFC 5737 /30', SOURCE)
+        self.assertIn('trap - ERR', SOURCE)
+
 
 if __name__ == '__main__':
     unittest.main()
