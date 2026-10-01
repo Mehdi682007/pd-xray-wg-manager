@@ -2,7 +2,7 @@
 
 [فارسی](#راهنمای-فارسی) | [English](#english-guide)
 
-Interactive WireGuard → Xray/VLESS gateway manager. **Version 3.2.2**.
+Interactive WireGuard → Xray/VLESS gateway manager. **Version 3.2.10**.
 
 ```text
   ____  ____           __  __                         __        ______
@@ -14,6 +14,8 @@ Interactive WireGuard → Xray/VLESS gateway manager. **Version 3.2.2**.
 ```
 
 ## راهنمای فارسی
+
+نسخهٔ 3.2.10 خطای تست داخلی را که در برخی محیط‌ها با وجود handshake موفق به timeout در DNS و rollback ختم می‌شد اصلاح می‌کند. اسکریپت `ethtool` را خودکار نصب کرده، checksum offload را فقط روی رابط‌های مجازی موقتِ تست خاموش می‌کند و آدرس مبدأ پرس‌وجوی DNS آزمایشی را مشخص می‌کند. تنظیم کارت شبکهٔ اصلی تغییر نمی‌کند. تست موفق روی سرور جایگزین آزمایش اتصال واقعی گوشی نیست.
 
 کاربر فقط برنامه WireGuard را روی گوشی یا کامپیوتر نصب می‌کند. این اسکریپت روی سرور، ترافیک TCP کاربران را از Xray و یک اتصال VLESS عبور می‌دهد. DNS با Unbound و TLS معتبر از همان مسیر عبور می‌کند.
 
@@ -88,6 +90,8 @@ Backupها: `/var/backups/xray-gateway-manager/snapshot-*`؛ بازیابی با
 نصب gateway و reboot روی یک Ubuntu 24.04 واقعی آزموده شده‌اند. اصلاحات بعدی با آزمون‌های هدفمند بررسی شده‌اند؛ **نصب تمیز آخرین نسخه روی تمام سیستم‌ها تأیید نشده است**. CI صحت syntax و چند regression مشخص را بررسی می‌کند، نه اتصال اینترنت یک VPS واقعی.
 
 ## English guide
+
+Version 3.2.10 fixes an internal test failure where the temporary WireGuard peer completed its handshake but DNS timed out, causing rollback. It installs `ethtool`, disables TX checksum offload only on the temporary veth pair, and explicitly binds test DNS sockets to the peer address. The physical NIC is unchanged. A successful server-side test does not verify the phone's external network path.
 
 Run a WireGuard server whose clients' IPv4 TCP traffic exits through an Xray VLESS outbound. Clients only need WireGuard. Unbound validates encrypted DNS through local Xray TCP relays and the same outbound.
 

@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
-VERSION=3.2.9
+VERSION=3.2.10
 S=/etc/xray-gateway-manager
 C=$S/clients
 B=/var/backups/xray-gateway-manager
@@ -253,7 +253,7 @@ requirements() {
  log "Pre-install snapshot: $(backup)"
  export DEBIAN_FRONTEND=noninteractive
  apt-get update
- apt-get install -y --no-install-recommends ca-certificates curl jq nftables unbound unbound-anchor dns-root-data dnsutils wireguard-tools iproute2 qrencode python3 openssl util-linux
+ apt-get install -y --no-install-recommends ca-certificates curl jq nftables unbound unbound-anchor dns-root-data dnsutils wireguard-tools iproute2 ethtool qrencode python3 openssl util-linux
  # Do not enable/restart the distribution nftables unit: it may flush other tables.
  if [[ ! -x /usr/local/bin/xray ]]; then
   local t; t=$(mktemp)
@@ -264,7 +264,7 @@ requirements() {
 }
 ensure_requirements() {
  local cmd
- for cmd in unbound unbound-checkconf unbound-anchor dig wg wg-quick nft jq qrencode python3 curl; do
+ for cmd in unbound unbound-checkconf unbound-anchor dig wg wg-quick nft ethtool jq qrencode python3 curl; do
   if ! command -v "$cmd" >/dev/null 2>&1; then requirements; return; fi
  done
  [[ -x /usr/local/bin/xray ]] || requirements
@@ -520,6 +520,7 @@ configure_routing() {
  put ROUTING_MODE wireguard
  put UDP_POLICY block
  health
+ STAGE=wireguard-client-test
  e2e
  commit
  log 'TCP through VLESS; encrypted DNS through VLESS; other forwarded traffic blocked.'
@@ -983,16 +984,19 @@ PY
  ip addr add "$host_addr/30" dev "$host_link"; ip link set "$host_link" up
  ip -n "$ns" addr add "$client_addr/30" dev "$peer_link"
  ip -n "$ns" link set "$peer_link" up; ip -n "$ns" link set lo up
+ # Some kernel/veth combinations lose locally looped WireGuard data with TX
+ # checksum offload while handshakes still succeed. Change only test links.
+ ethtool -K "$host_link" tx off >/dev/null
+ ip netns exec "$ns" ethtool -K "$peer_link" tx off >/dev/null
  wg genkey > "$d/key"; pub=$(wg pubkey < "$d/key")
  wg set wg0 peer "$pub" allowed-ips "$test_addr/32"
  ip -n "$ns" link add wgt type wireguard
   ip netns exec "$ns" wg set wgt private-key "$d/key" peer "$(wg show wg0 public-key)" endpoint "$host_addr:$(wg show wg0 listen-port)" allowed-ips 0.0.0.0/0 persistent-keepalive 25
   ip -n "$ns" addr add "$test_addr/32" dev wgt; ip -n "$ns" link set wgt mtu 1380 up
   ip -n "$ns" route add default dev wgt
-  # Prime the tunnel, then test the same DNS server placed in real client configs.
-  for attempt in 1 2 3; do ip netns exec "$ns" ping -c 1 -W 1 10.66.66.1 >/dev/null 2>&1 && break || true; done
+  # Verify forced DNS interception as well as the configured DNS address below.
   for mode in '' +tcp; do
-   result=$(ip netns exec "$ns" dig @10.66.66.1 api.ipify.org $mode +time=8 +tries=1 2>&1) || true
+   result=$(ip netns exec "$ns" dig -b "$test_addr" @1.1.1.1 api.ipify.org $mode +time=3 +tries=3 2>&1) || true
    if ! grep -q 'status: NOERROR' <<< "$result" || ! grep -Eq 'ANSWER: [1-9]' <<< "$result"; then
     log "E2E DNS $mode failed: $result" >&2
     log 'E2E client WireGuard state:' >&2; ip netns exec "$ns" wg show wgt >&2 || true
@@ -1001,7 +1005,7 @@ PY
     return 1
    fi
   done
- ip4=$(ip netns exec "$ns" dig @10.66.66.1 api.ipify.org A +short | tail -1)
+ ip4=$(ip netns exec "$ns" dig -b "$test_addr" @10.66.66.1 api.ipify.org A +short | tail -1)
  for scheme in http https; do
   port=80; [[ $scheme != https ]] || port=443
   result=$(ip netns exec "$ns" curl -4fsS --max-time 25 --resolve "api.ipify.org:$port:$ip4" "$scheme://api.ipify.org")

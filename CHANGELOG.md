@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.2.10
+
+- Fix false E2E failures on the tested Ubuntu host by disabling TX checksum offload on the two temporary veth interfaces only; physical interfaces are untouched.
+- Install/check `ethtool` automatically and restore the external-DNS interception test alongside the configured DNS query.
+- Bind test DNS sockets to the temporary peer address and allow bounded DNS retries during tunnel startup.
+- Verified the failing/successful cases on the affected host; full WireGuard DNS, HTTP and HTTPS validation is required before committing routing.
+
 ## 3.2.9
 
 - Capture temporary peer handshake and DNS NAT counters when the client-path DNS check fails.
