@@ -4,6 +4,8 @@
 
 - Fix E2E test failure on hosts already using the former fixed `192.0.2.0/30` test subnet.
 - Allocate an unused RFC 5737 `/30`, unique interface and namespace names, and a free WireGuard test peer address; always clean up only the test resources.
+- Ignore wg0's own `10.66.66.1/24` interface address when selecting a temporary peer IP.
+- Prevent recursive rollback diagnostics when the E2E subshell fails.
 
 ## 3.2.2
 
@@ -14,3 +16,6 @@
 - Display saved configs/QR codes on creation, duplicate-name selection and option 15.
 - Include automatic Unbound installation, authenticated upstream selection, Xray readiness checks, pre-rollback diagnostics and traffic/expiry limits.
 - Persian and English installation/operation documentation.
+
+- Ignore wg0's own 10.66.66.1/24 interface address when selecting a temporary peer IP.
+- Prevent recursive rollback diagnostics when the E2E subshell fails.

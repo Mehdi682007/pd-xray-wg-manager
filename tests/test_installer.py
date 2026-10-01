@@ -54,6 +54,8 @@ quick
         self.assertIn("route','show','table','all", SOURCE)
         self.assertIn('No unused RFC 5737 /30', SOURCE)
         self.assertIn('trap - ERR', SOURCE)
+        self.assertIn("x!='10.66.66.1/24'", SOURCE)
+        self.assertIn('IFS=$\' \\t\' read -r net_pair host_addr client_addr', SOURCE)
 
 
 if __name__ == '__main__':

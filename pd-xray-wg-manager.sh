@@ -89,6 +89,11 @@ restore_snapshot() {
 }
 failure() {
  local rc=$?
+ if [[ ${ROLLBACK_ACTIVE:-0} == 1 ]]; then
+  log "Rollback itself failed at line ${BASH_LINENO[0]} (exit $rc)." >&2
+  exit "$rc"
+ fi
+ export ROLLBACK_ACTIVE=1
  trap - ERR
  log "Failed at line ${BASH_LINENO[0]} (exit $rc)." >&2
  diagnostics || true
@@ -917,6 +922,7 @@ health() {
 }
 e2e() (
  set -Eeuo pipefail
+ trap '' ERR
  local ns suffix host_link peer_link d pub='' ip4 addr test_addr net_pair host_addr client_addr
  suffix=$(od -An -N3 -tx1 /dev/urandom | tr -d ' \n')
  ns="xgwt${suffix}"
@@ -932,7 +938,7 @@ e2e() (
  }
  # Pick an unused RFC 5737 /30. Some VPS providers reserve or route
  # 192.0.2.0/30 for their own test namespaces; fixed test addresses collide.
- read -r net_pair host_addr client_addr < <(python3 - <<'PY'
+ IFS=$' \t' read -r net_pair host_addr client_addr < <(python3 - <<'PY'
 import ipaddress,json,subprocess
 routes=json.loads(subprocess.check_output(['ip','-4','-j','route','show','table','all'],text=True))
 used=[]
@@ -952,7 +958,7 @@ PY
  test_addr=$(python3 - <<'PY'
 import ipaddress,re,subprocess
 cfg=open('/etc/wireguard/wg0.conf').read()+'\n'+subprocess.check_output(['wg','show','wg0','allowed-ips'],text=True)
-used=[ipaddress.ip_network(x,strict=False) for x in re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}/\d{1,2}',cfg)]
+used=[ipaddress.ip_network(x,strict=False) for x in re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}/\d{1,2}',cfg) if x!='10.66.66.1/24']
 network=ipaddress.ip_network('10.66.66.0/24')
 for ip in network.hosts():
  if ip==ipaddress.ip_address('10.66.66.1'): continue
