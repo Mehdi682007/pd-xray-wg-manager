@@ -44,6 +44,18 @@ sudo bash pd-xray-wg-manager.sh
 
 فایل را روی دیسک نگه دارید؛ rollback به مسیر فایل اسکریپت نیاز دارد. اجرای مستقیم با `bash <(curl ...)` برای این اسکریپت مناسب نیست.
 
+### اجرای مجدد و مدیریت کلاینت‌ها
+
+اگر اسکریپت را در پوشهٔ `/root` دانلود کرده‌اید، برای بازکردن دوبارهٔ منو با حساب root این دستور را اجرا کنید:
+
+```bash
+bash /root/pd-xray-wg-manager.sh
+```
+
+نیازی به دانلود یا نصب مجدد نیست. اگر فایل را جای دیگری ذخیره کرده‌اید، مسیر همان فایل را وارد کنید. پس از راه‌اندازی موفق، گزینهٔ **۶** برای افزودن کلاینت، **۷** برای فهرست کلاینت‌ها، **۱۴** برای حجم و تاریخ انقضا و **۱۵** برای نمایش کانفیگ و QR است؛ لازم نیست گزینهٔ ۱ را دوباره اجرا کنید.
+
+اگر پیام `Another manager operation is running` دیدید، ابتدا اجرای قبلی را بررسی کنید؛ اگر منوی قبلی باز است با گزینهٔ **۰** خارج شوید و اگر عملیاتی در حال اجراست، منتظر پایان آن بمانید. `Ctrl+Z` برنامه را معلق می‌کند و خروج محسوب نمی‌شود.
+
 ### ترتیب استفاده
 
 1. گزینه **۱: Quick setup** را اجرا و لینک VLESS را وارد کنید. نصب Unbound و وابستگی‌ها، Xray، WireGuard، DNS، routing و تست سلامت انجام می‌شود. **در این گزینه کلاینت ساخته نمی‌شود.**
@@ -104,6 +116,18 @@ bash -c 'wget -O pd-xray-wg-manager.sh https://raw.githubusercontent.com/Mehdi68
 ```
 
 Download to a real file: rollback requires a persistent script path, so do not use process substitution (`bash <(curl ...)`). Install wget with apt first if needed. The separate download/run commands above are an alternative. The installation command starts with Bash and downloads using wget; the manager may still install/use curl internally for connectivity tests.
+
+### Reopen the manager
+
+If you downloaded the script into `/root`, run this command as root to reopen its menu:
+
+```bash
+bash /root/pd-xray-wg-manager.sh
+```
+
+No download or reinstallation is needed. If you saved the file elsewhere, use that path instead. After successful setup, use **6** to add clients, **7** to list clients, **14** to change quotas/expiry, and **15** to display configs/QR codes. You do not need to repeat Quick setup.
+
+If you see `Another manager operation is running`, check the previous session. Exit an idle menu with **0**, or wait for an active operation to finish. `Ctrl+Z` suspends the program rather than exiting it.
 
 ### Setup and clients
 
