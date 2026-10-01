@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
-VERSION=3.2.5
+VERSION=3.2.6
 S=/etc/xray-gateway-manager
 C=$S/clients
 B=/var/backups/xray-gateway-manager
@@ -932,7 +932,7 @@ health() {
 }
 e2e() (
  set -Eeuo pipefail
- trap '' ERR
+ trap 'rc=$?; printf "[xgw] E2E failed at line %s (exit %s): %s\\n" "$LINENO" "$rc" "$BASH_COMMAND" >&2; exit "$rc"' ERR
  local ns suffix host_link peer_link d pub='' ip4 addr test_addr net_pair host_addr client_addr
  suffix=$(od -An -N3 -tx1 /dev/urandom | tr -d ' \n')
  ns="xgwt${suffix}"

@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.2.6
+
+- Print the exact failing command when the temporary WireGuard end-to-end check fails.
+
 ## 3.2.5
 
 - Preserve and report `dig` output when the DNS probe exits unsuccessfully, instead of aborting before diagnostics.
