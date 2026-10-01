@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
-VERSION=3.2.8
+VERSION=3.2.9
 S=/etc/xray-gateway-manager
 C=$S/clients
 B=/var/backups/xray-gateway-manager
@@ -995,6 +995,9 @@ PY
    result=$(ip netns exec "$ns" dig @10.66.66.1 api.ipify.org $mode +time=8 +tries=1 2>&1) || true
    if ! grep -q 'status: NOERROR' <<< "$result" || ! grep -Eq 'ANSWER: [1-9]' <<< "$result"; then
     log "E2E DNS $mode failed: $result" >&2
+    log 'E2E client WireGuard state:' >&2; ip netns exec "$ns" wg show wgt >&2 || true
+    log 'E2E server WireGuard state:' >&2; wg show wg0 >&2 || true
+    log 'E2E DNS NAT counters:' >&2; nft -a list chain ip xgw prerouting >&2 || true
     return 1
    fi
   done

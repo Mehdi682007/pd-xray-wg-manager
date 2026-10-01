@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.2.9
+
+- Capture temporary peer handshake and DNS NAT counters when the client-path DNS check fails.
+
 ## 3.2.8
 
 - Prime the temporary WireGuard tunnel before client-path DNS checks and query the DNS address used in actual client profiles.
