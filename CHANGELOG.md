@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.2.5
+
+- Preserve and report `dig` output when the DNS probe exits unsuccessfully, instead of aborting before diagnostics.
+
 ## 3.2.4
 
 - Retry transient DNS readiness failures after Xray/Unbound restart and report the final DNS response in diagnostics.

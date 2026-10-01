@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
-VERSION=3.2.4
+VERSION=3.2.5
 S=/etc/xray-gateway-manager
 C=$S/clients
 B=/var/backups/xray-gateway-manager
@@ -912,7 +912,11 @@ health() {
  log "VLESS exit: $result"
  for mode in udp tcp; do
   for attempt in {1..5}; do
-   if [[ $mode == tcp ]]; then result=$(dig @10.66.66.1 example.com +tcp +time=4 +tries=1 2>&1); else result=$(dig @10.66.66.1 example.com +time=4 +tries=1 2>&1); fi
+   if [[ $mode == tcp ]]; then
+    result=$(dig @10.66.66.1 example.com +tcp +time=4 +tries=1 2>&1) || true
+   else
+    result=$(dig @10.66.66.1 example.com +time=4 +tries=1 2>&1) || true
+   fi
    if grep -q 'status: NOERROR' <<< "$result" && grep -Eq 'ANSWER: [1-9]' <<< "$result"; then break; fi
    if (( attempt < 5 )); then log "DNS $mode did not answer yet (attempt $attempt/5); retrying."; sleep 2; fi
   done
