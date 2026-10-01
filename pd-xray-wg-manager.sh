@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
-VERSION=3.2.3
+VERSION=3.2.4
 S=/etc/xray-gateway-manager
 C=$S/clients
 B=/var/backups/xray-gateway-manager
@@ -905,15 +905,21 @@ PY
  log "Revoked $name."
 }
 health() {
- local result
+ local result mode attempt
  for unit in xray unbound wg-quick@wg0 xray-gateway-manager; do systemctl is-active --quiet "$unit"; done
  wait_xray
  result=$(proxy_exit_ip)
  log "VLESS exit: $result"
  for mode in udp tcp; do
-  if [[ $mode == tcp ]]; then result=$(dig @10.66.66.1 example.com +tcp +time=8 +tries=1); else result=$(dig @10.66.66.1 example.com +time=8 +tries=1); fi
-  grep -q 'status: NOERROR' <<< "$result"
-  grep -Eq 'ANSWER: [1-9]' <<< "$result"
+  for attempt in {1..5}; do
+   if [[ $mode == tcp ]]; then result=$(dig @10.66.66.1 example.com +tcp +time=4 +tries=1 2>&1); else result=$(dig @10.66.66.1 example.com +time=4 +tries=1 2>&1); fi
+   if grep -q 'status: NOERROR' <<< "$result" && grep -Eq 'ANSWER: [1-9]' <<< "$result"; then break; fi
+   if (( attempt < 5 )); then log "DNS $mode did not answer yet (attempt $attempt/5); retrying."; sleep 2; fi
+  done
+  if ! grep -q 'status: NOERROR' <<< "$result" || ! grep -Eq 'ANSWER: [1-9]' <<< "$result"; then
+   log "DNS $mode failed after 5 attempts: $result" >&2
+   return 1
+  fi
   log "DNS $mode: PASS"
  done
  nft list table ip xgw >/dev/null

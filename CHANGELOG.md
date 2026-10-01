@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.2.4
+
+- Retry transient DNS readiness failures after Xray/Unbound restart and report the final DNS response in diagnostics.
+
 ## 3.2.3
 
 - Fix E2E test failure on hosts already using the former fixed `192.0.2.0/30` test subnet.
