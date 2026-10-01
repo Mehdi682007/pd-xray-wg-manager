@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
-VERSION=3.2.6
+VERSION=3.2.7
 S=/etc/xray-gateway-manager
 C=$S/clients
 B=/var/backups/xray-gateway-manager
@@ -986,13 +986,16 @@ PY
  wg genkey > "$d/key"; pub=$(wg pubkey < "$d/key")
  wg set wg0 peer "$pub" allowed-ips "$test_addr/32"
  ip -n "$ns" link add wgt type wireguard
- ip netns exec "$ns" wg set wgt private-key "$d/key" peer "$(wg show wg0 public-key)" endpoint "$host_addr:$(wg show wg0 listen-port)" allowed-ips 0.0.0.0/0 persistent-keepalive 25
- ip -n "$ns" addr add "$test_addr/32" dev wgt; ip -n "$ns" link set wgt mtu 1380 up
- ip -n "$ns" route add default dev wgt
- for mode in '' +tcp; do
-  result=$(ip netns exec "$ns" dig @1.1.1.1 api.ipify.org $mode +time=8 +tries=1)
-  grep -q 'status: NOERROR' <<< "$result"; grep -Eq 'ANSWER: [1-9]' <<< "$result"
- done
+  ip netns exec "$ns" wg set wgt private-key "$d/key" peer "$(wg show wg0 public-key)" endpoint "$host_addr:$(wg show wg0 listen-port)" allowed-ips 0.0.0.0/0 persistent-keepalive 25
+  ip -n "$ns" addr add "$test_addr/32" dev wgt; ip -n "$ns" link set wgt mtu 1380 up
+  ip -n "$ns" route add default dev wgt
+  for mode in '' +tcp; do
+   result=$(ip netns exec "$ns" dig @1.1.1.1 api.ipify.org $mode +time=8 +tries=1 2>&1) || true
+   if ! grep -q 'status: NOERROR' <<< "$result" || ! grep -Eq 'ANSWER: [1-9]' <<< "$result"; then
+    log "E2E DNS $mode failed: $result" >&2
+    return 1
+   fi
+  done
  ip4=$(ip netns exec "$ns" dig @10.66.66.1 api.ipify.org A +short | tail -1)
  for scheme in http https; do
   port=80; [[ $scheme != https ]] || port=443

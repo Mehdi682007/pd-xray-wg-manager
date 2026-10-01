@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.2.7
+
+- Include the DNS response in end-to-end diagnostics when the temporary WireGuard client DNS probe fails.
+
 ## 3.2.6
 
 - Print the exact failing command when the temporary WireGuard end-to-end check fails.
